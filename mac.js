@@ -54,7 +54,7 @@ module.exports = {
     async getDiscDrives() {
         try {
             let results = await execAsync('drutil status -xml', {timeout: 2000});
-            return results;
+            return [];
         } catch (err) {
 
         }

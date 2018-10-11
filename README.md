@@ -20,3 +20,6 @@ returns [{
     mountpoint
 }]
 ```
+
+**Try it out**
+Run "node runFunctions" to see the results of the above functions
