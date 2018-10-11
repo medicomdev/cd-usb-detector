@@ -61,7 +61,7 @@ module.exports = {
             let results = await execAsync('drutil status -xml', {timeout: 3000});
             let json = xmlJs.xml2js(results, {compact: true});
             let returnDiscDrivesArray = [];
-            if(!json.statusdoc.statusForDevice){
+            if(!json.statusdoc.statusfordevice){
               return [];
             }
             
