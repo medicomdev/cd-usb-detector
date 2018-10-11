@@ -3,62 +3,132 @@ const exec = require('child_process').exec;
 const execAsync = Promise.promisify(exec);
 const plist = require('plist');
 const xmlJs = require('xml-js');
-const csv = require("fast-csv");
 const REMOVABLE_DISK_DRIVE_TYPE = 2;
+const COMPACT_DISC_DRIVE_TYPE = 5;
+const MEDIA_LOADED_TYPES = {
+  MEDIA_NOT_IN_DRIVE: 1,
+  MEDIA_IN_DRIVE:2,
+  UNABLE_TO_DETERMINE: 3
+}
+
+function _csvJSON(csv){
+
+  var lines=csv.trim().split('\n');
+
+  var result = [];
+
+  var headers=lines[0].split(',').map((headerItem) => {
+    return headerItem.trim();
+  });
+
+  lines.splice(0, 1);
+  lines.forEach(function(line) {
+    var obj = {};
+    var currentline = line.split(',');
+    headers.forEach(function(header, i) {
+      obj[header] = currentline[i];
+    });
+    result.push(obj);
+  });
+
+  return result;
+}
+
+async function _getIsMediaLoadedForLogicalDiskName(findName){
+  let results = await execAsync('wmic CDROM get drive,medialoaded /format:csv', {timeout: 3000});
+  let resultsArray = _csvJSON(results);
+  let returnResult = resultsArray.find((currentResult) => {
+    return findName === currentResult['Drive'];
+  });
+
+  if(returnResult){
+    return returnResult['MediaLoaded'] === 'TRUE' ? MEDIA_LOADED_TYPES.MEDIA_IN_DRIVE : MEDIA_LOADED_TYPES.MEDIA_NOT_IN_DRIVE;
+  }else{
+    return MEDIA_LOADED_TYPES.UNABLE_TO_DETERMINE;
+  }
+}
 
 module.exports = {
+
     async getUSBStorageDevices() {
         try {
-          let results = await execAsync('wmic logicaldisk get caption,freespace,volumename,size,drivetype /format:csv', {timeout: 3000});
+          let results = await execAsync('wmic logicaldisk get caption,freespace,size,drivetype /format:csv', {timeout: 3000});
+          let resultsArray = _csvJSON(results);
           let returnUSBDevicesArray = [];
-          let headersObect;
 
-          return new Promise((resolve, reject) => {
-            csv.fromString(results, {headers: true, ignoreEmpty: true})
-            .on("data", function(data){
-              if(!headersObect){
-                headersObect = {};
-                for(let i=0; i<data.length;i++){
-                  headersObect[data[i]] = i;
-                }
-              }else{
-                let currentUSBDeviceItem = {};
+          resultsArray.forEach((currentResult) => {
 
-                let driveTypePosition = headersObect['DriveType'];
-                if(parseInt(data[driveTypePosition]) !== REMOVABLE_DISK_DRIVE_TYPE){
-                  return;
-                }
+            if(parseInt(currentResult['DriveType']) !== REMOVABLE_DISK_DRIVE_TYPE){
+              return;
+            }
 
-                let freeSpacePosition = headersObect['FreeSpace'];
-                let sizePosition = headersObect['Size'];
-                let volumeNamePosition = headersObect['VolumeName'];
+            let currentUSBDeviceItem = {};
+            currentUSBDeviceItem.freeInBytes = parseInt(currentResult['FreeSpace']);
+            currentUSBDeviceItem.totalInBytes = parseInt(currentResult['Size']);
+            currentUSBDeviceItem.mountpoint = currentResult['Caption'];
 
-                currentUSBDeviceItem.freeInBytes = parseInt(data[freeSpacePosition]);
-                currentUSBDeviceItem.totalInBytes = parseInt(data[sizePosition]);
-                currentUSBDeviceItem.mountpoint = data[volumeNamePosition];
-
-                returnUSBDevicesArray.push(currentUSBDeviceItem);
-              }
-
-            })
-            .on("end", function(){
-              resolve(returnUSBDevicesArray);
-            });
+            returnUSBDevicesArray.push(currentUSBDeviceItem);
 
           });
+
+          return returnUSBDevicesArray;
 
         } catch (err) {
           console.log(err);
         }
     },
 
-    //'drutil status -xml'
-    //'system_profiler SPDiscBurningDataType -xml'
     async getDiscDrives() {
-        try {
-          return [];
-        } catch (err) {
-          console.log(err);
+      try {
+        let results = await execAsync('wmic logicaldisk get caption,freespace,size,drivetype /format:csv', {timeout: 3000});
+        let resultsArray = _csvJSON(results);
+        let returnDiscDrivesArray = [];
+
+        for(let currentResult of resultsArray){
+          if(parseInt(currentResult['DriveType']) === COMPACT_DISC_DRIVE_TYPE){
+            let currentUSBDeviceItem = {};
+            let isMediaLoaded = await _getIsMediaLoadedForLogicalDiskName(currentResult['Caption']);
+            if(isMediaLoaded === MEDIA_LOADED_TYPES.MEDIA_IN_DRIVE){
+              currentUSBDeviceItem.isMediaInDrive = true;
+
+              if(currentResult['FreeSpace'] === ''){
+                currentUSBDeviceItem.isWritable = true;
+                currentUSBDeviceItem.isLiveFileSystem = false;
+              }else{
+                let freeSpaceInBytes = parseInt(currentResult['FreeSpace']);
+                let totalSpaceInBytes = parseInt(currentResult['Size']);
+                currentUSBDeviceItem.freeInBytes = freeSpaceInBytes;
+                currentUSBDeviceItem.totalInBytes = totalSpaceInBytes;
+
+                if(freeSpaceInBytes > 0){
+                  currentUSBDeviceItem.isWritable = true;
+                  currentUSBDeviceItem.isLiveFileSystem = true;
+
+                }else{
+                  currentUSBDeviceItem.isWritable = false;
+                  currentUSBDeviceItem.isLiveFileSystem = false; // we are assuming if there is no more freeSpaceInBytes then it is not a live file system
+                }
+
+              }
+
+
+            }else if(isMediaLoaded === MEDIA_LOADED_TYPES.MEDIA_NOT_IN_DRIVE){
+              currentUSBDeviceItem.isMediaInDrive = false;
+            }else{
+              currentUSBDeviceItem.isMediaInDrive = false;
+              currentUSBDeviceItem.isMediaInDriveError = true;
+            }
+
+            currentUSBDeviceItem.mountpoint = currentResult['Caption'];
+
+            returnDiscDrivesArray.push(currentUSBDeviceItem);
+          }
         }
+
+        return returnDiscDrivesArray;
+
+      } catch (err) {
+        console.log(err);
+      }
     }
 };
