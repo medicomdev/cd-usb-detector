@@ -17,7 +17,8 @@ returns [{
     isLiveFileSystem,
     freeInBytes,
     totalInBytes,
-    mountpoint
+    mountpoint, /*only returns on windows*/
+    drivename /*only returns on mac*/
 }]
 ```
 
