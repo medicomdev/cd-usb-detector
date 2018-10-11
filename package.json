@@ -1,0 +1,35 @@
+{
+  "name": "cd-usb-detector",
+  "version": "1.0.0",
+  "description": "Detects CDs and USBs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medicomdev/cd-usb-detector.git"
+  },
+  "os": [
+    "darwin",
+    "win32"
+  ],
+  "keywords": [
+    "CD",
+    "USB",
+    "drutil",
+    "wmic",
+    "system_profiler"
+  ],
+  "author": "Medicom Technologies",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/medicomdev/cd-usb-detector/issues"
+  },
+  "homepage": "https://github.com/medicomdev/cd-usb-detector#readme",
+  "dependencies": {
+    "bluebird": "^3.5.2",
+    "plist": "^3.0.1",
+    "xml-js": "^1.6.8"
+  }
+}
