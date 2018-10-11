@@ -29,6 +29,7 @@
   "homepage": "https://github.com/medicomdev/cd-usb-detector#readme",
   "dependencies": {
     "bluebird": "^3.5.2",
+    "fast-csv": "^2.4.1",
     "plist": "^3.0.1",
     "xml-js": "^1.6.8"
   }

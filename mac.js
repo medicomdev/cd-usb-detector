@@ -16,7 +16,7 @@ function _getItems(array) {
     return array.filter(object => !!object._items).map(object => object._items);
 }
 
-function runThroughArrayToGetUSBStorageDevices(array) {
+function _runThroughArrayToGetUSBStorageDevices(array) {
     let usbDevices = [];
     _getMedia(array).forEach((mediaArray) => {
         _getVolumes(mediaArray).forEach((volumes) => {
@@ -32,7 +32,7 @@ function runThroughArrayToGetUSBStorageDevices(array) {
         });
     });
     _getItems(array).forEach((items) => {
-        let itemsResults = runThroughArrayToGetUSBStorageDevices(items);
+        let itemsResults = _runThroughArrayToGetUSBStorageDevices(items);
         usbDevices = usbDevices.concat(itemsResults);
     });
     return usbDevices;
@@ -48,7 +48,7 @@ module.exports = {
         try {
             let results = await execAsync('system_profiler SPUSBDataType -xml', {timeout: 3000});
             let json = plist.parse(results);
-            return runThroughArrayToGetUSBStorageDevices(json);
+            return _runThroughArrayToGetUSBStorageDevices(json);
         } catch (err) {
             console.log(err);
         }
@@ -93,7 +93,7 @@ module.exports = {
             });
             return returnDiscDrivesArray;
         } catch (err) {
-
+          console.log(err);
         }
     }
 };
