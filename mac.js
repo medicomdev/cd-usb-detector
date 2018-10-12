@@ -13,28 +13,29 @@ function _getMedia(array) {
 }
 
 function _getItems(array) {
-    return array.filter(object => !!object._items).map(object => object._items);
+    return array.filter(object => object._items).map(object => object._items);
 }
 
+//A Map is used and returned because there can be duplicate volumes
 function _runThroughArrayToGetUSBStorageDevices(array) {
-    let usbDevices = [];
-    _getMedia(array).forEach((mediaArray) => {
-        _getVolumes(mediaArray).forEach((volumes) => {
-            volumes.forEach((volume) => {
-                if (!volume.hasOwnProperty('optical_media_type')) {
-                    usbDevices.push({
-                        freeInBytes: volume.free_space_in_bytes,
-                        totalInBytes: volume.free_space_in_bytes + volume.size_in_bytes,
-                        mountpoint: volume.mount_point,
-                    });
-                }
-            });
+    let usbDevices = new Map();
+    _getVolumes(array).forEach((volumes) => {
+        volumes.forEach((volume) => {
+            if (!volume.hasOwnProperty('optical_media_type') && volume.mount_point) {
+                usbDevices.set(volume.mount_point, {
+                    freeInBytes: volume.free_space_in_bytes,
+                    totalInBytes: volume.free_space_in_bytes + volume.size_in_bytes,
+                    mountpoint: volume.mount_point,
+                });
+            }
         });
     });
-    _getItems(array).forEach((items) => {
+
+    _getItems(array).concat(_getMedia(array)).forEach((items) => {
         let itemsResults = _runThroughArrayToGetUSBStorageDevices(items);
-        usbDevices = usbDevices.concat(itemsResults);
+        usbDevices = new Map([...usbDevices, ...itemsResults]);
     });
+    
     return usbDevices;
 }
 
@@ -48,7 +49,8 @@ module.exports = {
         try {
             let results = await execAsync('system_profiler SPUSBDataType -xml', {timeout: 3000});
             let json = plist.parse(results);
-            return _runThroughArrayToGetUSBStorageDevices(json);
+            let map = _runThroughArrayToGetUSBStorageDevices(json);
+            return Array.from(map.values());
         } catch (err) {
             console.log(err);
         }
@@ -64,7 +66,7 @@ module.exports = {
             if(!json.statusdoc.statusfordevice){
               return [];
             }
-            
+
             let statusForDeviceArray;
             if(json.statusdoc.statusfordevice.length){
               statusForDeviceArray = json.statusdoc.statusfordevice;
