@@ -89,10 +89,10 @@ module.exports = {
                 let usedBlocks = parseInt(deviceStatus.mediaInfo.usedSpace._attributes.blockCount);
 
                 let freeInBytes = _convertBlocksToBytes(freeBlocks);
-                let usedInBytes = _convertBlocksToBytes(usedBlocks);
+                let usedInBytes = _convertBlocksToBytes(usedBlocks); //For live file system this is the fullsize of the CD, all of the bytes are "used" for the live filesystem
 
                 currentDiscDriveItem.freeInBytes = freeInBytes;
-                currentDiscDriveItem.totalInBytes = freeInBytes + usedInBytes;
+                currentDiscDriveItem.totalInBytes = usedInBytes;
 
               }else{
                 currentDiscDriveItem.isMediaInDrive = false;
