@@ -10,6 +10,7 @@ const MEDIA_LOADED_TYPES = {
   MEDIA_IN_DRIVE:2,
   UNABLE_TO_DETERMINE: 3
 }
+const WMIC_TIMEOUT_IN_MS = 7000;
 
 function _csvJSON(csv){
 
@@ -35,7 +36,7 @@ function _csvJSON(csv){
 }
 
 async function _getIsMediaLoadedForLogicalDiskName(findName){
-  let results = await execAsync('wmic CDROM get drive,medialoaded /format:csv', {timeout: 3000});
+  let results = await execAsync('wmic CDROM get drive,medialoaded /format:csv', {timeout: WMIC_TIMEOUT_IN_MS});
   let resultsArray = _csvJSON(results);
   let returnResult = resultsArray.find((currentResult) => {
     return findName === currentResult['Drive'];
@@ -52,7 +53,7 @@ module.exports = {
 
     async getUSBStorageDevices() {
         try {
-          let results = await execAsync('wmic logicaldisk get caption,freespace,size,drivetype /format:csv', {timeout: 3000});
+          let results = await execAsync('wmic logicaldisk get caption,freespace,size,drivetype /format:csv', {timeout: WMIC_TIMEOUT_IN_MS});
           let resultsArray = _csvJSON(results);
           let returnUSBDevicesArray = [];
 
@@ -80,7 +81,7 @@ module.exports = {
 
     async getDiscDrives() {
       try {
-        let results = await execAsync('wmic logicaldisk get caption,freespace,size,drivetype /format:csv', {timeout: 3000});
+        let results = await execAsync('wmic logicaldisk get caption,freespace,size,drivetype /format:csv', {timeout: WMIC_TIMEOUT_IN_MS});
         let resultsArray = _csvJSON(results);
         let returnDiscDrivesArray = [];
 
