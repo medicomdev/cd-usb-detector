@@ -1,4 +1,6 @@
-**getUSBStorageDevices**  
+**getUSBStorageDevices**
+This function will throw an error on failures / timeout
+
 ```javascript
 returns [{
     freeInBytes,
@@ -9,6 +11,7 @@ returns [{
 
 
 **getDiscDrives**
+This function will throw an error on failures / timeout
 
 ```javascript
 returns [{

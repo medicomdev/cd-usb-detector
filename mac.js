@@ -46,66 +46,58 @@ function _convertBlocksToBytes(blocks){
 module.exports = {
     //'system_profiler SPUSBDataType -xml'
     async getUSBStorageDevices() {
-        try {
-            let results = await execAsync('system_profiler SPUSBDataType -xml', {timeout: 3000});
-            let json = plist.parse(results);
-            let map = _runThroughArrayToGetUSBStorageDevices(json);
-            return Array.from(map.values());
-        } catch (err) {
-            console.log(err);
-        }
+      let results = await execAsync('system_profiler SPUSBDataType -xml', {timeout: 3000});
+      let json = plist.parse(results);
+      let map = _runThroughArrayToGetUSBStorageDevices(json);
+      return Array.from(map.values());
     },
 
     //'drutil status -xml'
     //'system_profiler SPDiscBurningDataType -xml'
     async getDiscDrives() {
-        try {
-            let results = await execAsync('drutil status -xml', {timeout: 3000});
-            let json = xmlJs.xml2js(results, {compact: true});
-            let returnDiscDrivesArray = [];
-            if(!json.statusdoc.statusfordevice){
-              return [];
-            }
+      let results = await execAsync('drutil status -xml', {timeout: 3000});
+      let json = xmlJs.xml2js(results, {compact: true});
+      let returnDiscDrivesArray = [];
+      if(!json.statusdoc.statusfordevice){
+        return [];
+      }
 
-            let statusForDeviceArray;
-            if(json.statusdoc.statusfordevice.length){
-              statusForDeviceArray = json.statusdoc.statusfordevice;
-            }else{
-              statusForDeviceArray = [json.statusdoc.statusfordevice];
-            }
-            statusForDeviceArray.forEach((statusForDevice) => {
-              let name = statusForDevice.device._attributes.name;
-              let deviceStatus = statusForDevice.deviceStatus;
+      let statusForDeviceArray;
+      if(json.statusdoc.statusfordevice.length){
+        statusForDeviceArray = json.statusdoc.statusfordevice;
+      }else{
+        statusForDeviceArray = [json.statusdoc.statusfordevice];
+      }
+      statusForDeviceArray.forEach((statusForDevice) => {
+        let name = statusForDevice.device._attributes.name;
+        let deviceStatus = statusForDevice.deviceStatus;
 
-              let currentDiscDriveItem = {};
-              if(deviceStatus.mediaIsPresent){
-                currentDiscDriveItem.isMediaInDrive = true;
-                let mediaInfo = deviceStatus.mediaInfo;
+        let currentDiscDriveItem = {};
+        if(deviceStatus.mediaIsPresent){
+          currentDiscDriveItem.isMediaInDrive = true;
+          let mediaInfo = deviceStatus.mediaInfo;
 
-                currentDiscDriveItem.isWritable = !!mediaInfo.appendable;
-                currentDiscDriveItem.isLiveFileSystem = !!(mediaInfo.appendable && !mediaInfo.overwritable);
+          currentDiscDriveItem.isWritable = !!mediaInfo.appendable;
+          currentDiscDriveItem.isLiveFileSystem = !!(mediaInfo.appendable && !mediaInfo.overwritable);
 
-                let freeBlocks = parseInt(deviceStatus.mediaInfo.freeSpace._attributes.blockCount);
-                let usedBlocks = parseInt(deviceStatus.mediaInfo.usedSpace._attributes.blockCount);
+          let freeBlocks = parseInt(deviceStatus.mediaInfo.freeSpace._attributes.blockCount);
+          let usedBlocks = parseInt(deviceStatus.mediaInfo.usedSpace._attributes.blockCount);
 
-                let freeInBytes = _convertBlocksToBytes(freeBlocks);
-                let usedInBytes = _convertBlocksToBytes(usedBlocks); //For live file system this is the fullsize of the CD, all of the bytes are "used" for the live filesystem
+          let freeInBytes = _convertBlocksToBytes(freeBlocks);
+          let usedInBytes = _convertBlocksToBytes(usedBlocks); //For live file system this is the fullsize of the CD, all of the bytes are "used" for the live filesystem
 
-                currentDiscDriveItem.freeInBytes = freeInBytes;
-                currentDiscDriveItem.totalInBytes = usedInBytes;
+          currentDiscDriveItem.freeInBytes = freeInBytes;
+          currentDiscDriveItem.totalInBytes = usedInBytes;
 
-              }else{
-                currentDiscDriveItem.isMediaInDrive = false;
-              }
-
-              currentDiscDriveItem.drivename = name;
-
-              returnDiscDrivesArray.push(currentDiscDriveItem);
-
-            });
-            return returnDiscDrivesArray;
-        } catch (err) {
-          console.log(err);
+        }else{
+          currentDiscDriveItem.isMediaInDrive = false;
         }
+
+        currentDiscDriveItem.drivename = name;
+
+        returnDiscDrivesArray.push(currentDiscDriveItem);
+
+      });
+      return returnDiscDrivesArray;
     }
 };
