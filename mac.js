@@ -24,7 +24,7 @@ function _runThroughArrayToGetUSBStorageDevices(array) {
             if (!volume.hasOwnProperty('optical_media_type') && volume.mount_point) {
                 usbDevices.set(volume.mount_point, {
                     freeInBytes: volume.free_space_in_bytes,
-                    totalInBytes: volume.free_space_in_bytes + volume.size_in_bytes,
+                    totalInBytes: volume.size_in_bytes,
                     mountpoint: volume.mount_point,
                 });
             }
